@@ -529,6 +529,11 @@ class ApplicationsPanelView(View):
     async def staff_button(self, interaction: discord.Interaction, button: Button):
         await self._start_if_open(interaction, "staff", "Staff")
 
+    @discord.ui.button(custom_id="panel_team", label="Team Applications", style=discord.ButtonStyle.primary)
+    async def staff_button(self, interaction: discord.Interaction, button: Button):
+        await self._start_if_open(interaction, "team", "Team")
+
+
 def build_panel_content():
     def status_text(key):
         return " (Closed)" if not APP_STATUS.get(key, True) else ""
@@ -536,10 +541,11 @@ def build_panel_content():
         "# 📝Applications 📝 #\n"
         "Welcome to Comptive Tagging Gorillas. We are currently looking for active refs, casters, commentators, "
         "and staff members. If you would like to be apart of are team please apply with are provide sources.\n\n"
-        f"● **Ref application**{status_text('ref')}\n"
-        f"● **Commentator application**{status_text('commentator')}\n"
-        f"● **Caster application**{status_text('caster')}\n"
-        f"● **Staff application**{status_text('staff')}\n\n"
+        f"● **Ref Application**{status_text('ref')}\n"
+        f"● **Commentator Application**{status_text('commentator')}\n"
+        f"● **Caster Application**{status_text('caster')}\n"
+        f"● **Staff Application**{status_text('staff')}\n\n"
+        f"● **Team Applications**{status_text('team')}\n\n"
         "We really appreciate yall taking your time out of your day to apply and to try to be apart of are team. "
         "This means a lot to the CTG boards and staff for helping us through the scrims and server. We hope you "
         "enjoy your time here and thank you for applying.\n\n"
