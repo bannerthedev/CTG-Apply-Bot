@@ -534,16 +534,16 @@ def build_panel_content():
         return " (Closed)" if not APP_STATUS.get(key, True) else ""
     content = (
         "# 📝Applications 📝 #\n"
-        "Welcome to Monke Monke Monke League. We are currently looking for active refs, casters, commentators, "
+        "Welcome to Comptive Tagging Gorillas. We are currently looking for active refs, casters, commentators, "
         "and staff members. If you would like to be apart of are team please apply with are provide sources.\n\n"
         f"● **Ref application**{status_text('ref')}\n"
         f"● **Commentator application**{status_text('commentator')}\n"
         f"● **Caster application**{status_text('caster')}\n"
         f"● **Staff application**{status_text('staff')}\n\n"
         "We really appreciate yall taking your time out of your day to apply and to try to be apart of are team. "
-        "This means a lot to the MMM boards and staff for helping us through the scrims and server. We hope you "
+        "This means a lot to the CTG boards and staff for helping us through the scrims and server. We hope you "
         "enjoy your time here and thank you for applying.\n\n"
-        "Your fellow\nBoards of MMM"
+        "Your fellow\nBoards of CTG"
     )
     return content
 
@@ -772,7 +772,7 @@ async def on_ready():
                 teams_announcement = (
                     "@everyone\n"
                     "🏆 ALL TEAMS HAVE BEEN DECIDED 🏆\n\n"
-                    "After going through every application, we are officially locked in for Season X. "
+                    "After going through every application, we are officially locked in for Season 1. "
                     "Huge congratulations to every team that made it in. We’re excited to see what every roster "
                     "brings this season. 👀\n\n"
                     f"HERE ARE YOUR OFFICIAL {teams_count} TEAMS:\n\n"
