@@ -1,12 +1,13 @@
 import asyncio
 import os
 import dotenv
-dotenv.load_dotenv()
+load_dotenv()
 
 import discord
 from discord.ext import commands
 from discord.ui import View, Select, Button
 from discord import app_commands, TextChannel
+from dotenv import load_dotenv
 
 # ============== CONFIG ==============
 GUILD_IDS = 1487301382909460502  # or None to register globally
