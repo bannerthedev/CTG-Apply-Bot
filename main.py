@@ -530,26 +530,24 @@ class ApplicationsPanelView(View):
         await self._start_if_open(interaction, "staff", "Staff")
 
     @discord.ui.button(custom_id="panel_team", label="Team Applications", style=discord.ButtonStyle.primary)
-    async def staff_button(self, interaction: discord.Interaction, button: Button):
+    async def team_button(self, interaction: discord.Interaction, button: Button):
         await self._start_if_open(interaction, "team", "Team")
 
-
 def build_panel_content():
-    def status_text(key):
-        return " (Closed)" if not APP_STATUS.get(key, True) else ""
     content = (
         "# 📝Applications 📝 #\n"
-        "Welcome to Comptive Tagging Gorillas. We are currently looking for active refs, casters, commentators, "
-        "and staff members. If you would like to be apart of are team please apply with are provide sources.\n\n"
-        f"● **Ref Application**{status_text('ref')}\n"
-        f"● **Commentator Application**{status_text('commentator')}\n"
-        f"● **Caster Application**{status_text('caster')}\n"
-        f"● **Staff Application**{status_text('staff')}\n\n"
-        f"● **Team Applications**{status_text('team')}\n\n"
+        "Welcome to Comptive Tagging Gorillas. We are currently looking for active refs, casters, commentators, and "
+        "staff members. If you would like to be apart of are team please apply with are provide sources.\n\n"
+        "● Ref Application\n"
+        "● Commentator Application\n"
+        "● Caster Application\n"
+        "● Staff Application\n"
+        "● Team Applications\n\n"
         "We really appreciate yall taking your time out of your day to apply and to try to be apart of are team. "
         "This means a lot to the CTG boards and staff for helping us through the scrims and server. We hope you "
         "enjoy your time here and thank you for applying.\n\n"
-        "Your fellow\nBoards of CTG"
+        "Your fellow\n"
+        "Boards of CTG"
     )
     return content
 
@@ -561,15 +559,11 @@ async def on_ready():
         tree = bot.tree
         guild_obj = discord.Object(id=GUILD_IDS) if isinstance(GUILD_IDS, int) else None
 
-        # helper to build mention blocks automatically from a role
-        def build_role_block(guild: discord.Guild, role_id: int) -> str:
-            role = guild.get_role(role_id)
-            if not role:
+        # helper to format new-accept lists
+        def fmt_new(ids_set):
+            if not ids_set:
                 return "• None this wave."
-            members = [m for m in guild.members if role in m.roles]
-            if not members:
-                return "• None this wave."
-            return "\n".join(f"• {m.mention}" for m in members)
+            return "\n".join(f"• <@{uid}>" for uid in ids_set)
 
         # /register
         @tree.command(
@@ -660,6 +654,8 @@ async def on_ready():
                     child.disabled = not APP_STATUS.get("caster", True)
                 elif cid == "panel_staff":
                     child.disabled = not APP_STATUS.get("staff", True)
+                elif cid == "panel_team":
+                    child.disabled = not APP_STATUS.get("team", True)
 
             valid_entries = []
             for ch_id, msg_id in list(entries):
@@ -704,6 +700,8 @@ async def on_ready():
                     child.disabled = not APP_STATUS.get("caster", True)
                 elif cid == "panel_staff":
                     child.disabled = not APP_STATUS.get("staff", True)
+                elif cid == "panel_team":
+                    child.disabled = not APP_STATUS.get("team", True)
 
             try:
                 msg = await channel.send(content, view=view)
@@ -778,7 +776,7 @@ async def on_ready():
                 teams_announcement = (
                     "@everyone\n"
                     "🏆 ALL TEAMS HAVE BEEN DECIDED 🏆\n\n"
-                    "After going through every application, we are officially locked in for Season 1. "
+                    "After going through every application, we are officially locked in for Season X. "
                     "Huge congratulations to every team that made it in. We’re excited to see what every roster "
                     "brings this season. 👀\n\n"
                     f"HERE ARE YOUR OFFICIAL {teams_count} TEAMS:\n\n"
@@ -815,11 +813,6 @@ async def on_ready():
             # ----- EVERYTHING WAVE ANNOUNCEMENT (only newly accepted this wave) -----
             if everything_wave:
                 helper_mention = f"<@&{HELPER_ROLE_ID}>"
-
-                def fmt_new(ids_set):
-                    if not ids_set:
-                        return "• None this wave."
-                    return "\n".join(f"• <@{uid}>" for uid in ids_set)
 
                 refs_block = fmt_new(NEW_REFS)
                 casters_block = fmt_new(NEW_CASTERS)
