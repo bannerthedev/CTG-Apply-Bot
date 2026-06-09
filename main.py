@@ -535,7 +535,7 @@ class ApplicationsPanelView(View):
 def build_panel_content():
     content = (
         "# 📝Applications 📝 #\n"
-        "Welcome to Comptive Tagging Gorillas. We are currently looking for active refs, casters, commentators, and "
+        "Welcome to Pro Division Association. We are currently looking for active refs, casters, commentators, and "
         "staff members. If you would like to be apart of our team please apply and provide sources.\n\n"
         "● Ref Application\n"
         "● Commentator Application\n"
@@ -543,10 +543,10 @@ def build_panel_content():
         "● Staff Application\n"
         "● Team Applications\n\n"
         "We really appreciate yall taking your time out of your day to apply and to try to be apart of our team. "
-        "This means a lot to the CTG boards and staff for helping us through the scrims and server. We hope you "
+        "This means a lot to the PDA boards and staff for helping us through the scrims and server. We hope you "
         "enjoy your time here and thank you for applying.\n\n"
         "Your fellow\n"
-        "Boards of CTG"
+        "Boards of PDA"
     )
     return content
 
