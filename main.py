@@ -1,28 +1,26 @@
 import asyncio
 import os
-import dotenv
-
+from dotenv import load_dotenv
 
 import discord
 from discord.ext import commands
 from discord.ui import View, Select, Button
 from discord import app_commands, TextChannel
-from dotenv import load_dotenv
 
 load_dotenv()
 
 # ============== CONFIG ==============
-GUILD_IDS = 1487301382909460502  # or None to register globally
-APPLICATION_CHANNEL_ID = 1511923081734783086
-TRANSACTIONS_CHANNEL_ID = 1490027619985522748
-ANNOUNCEMENTS_CHANNEL_ID = 123456789012345678  # <- REPLACE with your announcements channel ID
+GUILD_IDS = 1469203259842494497  # or None to register globally
+APPLICATION_CHANNEL_ID = 1470568892194881642
+TRANSACTIONS_CHANNEL_ID = 1469208105559658702
+ANNOUNCEMENTS_CHANNEL_ID = 1469204156110733322
 
-CASTER_ROLE_ID = 1490442914281558036
-REF_ROLE_ID = 1490443037363535992
-COMMENTATOR_ROLE_ID = 1493370350736637992
-HELPER_ROLE_ID = 1511928257983938613  # helper role
+CASTER_ROLE_ID = 1470388240602366126
+REF_ROLE_ID = 1470388292900880487
+COMMENTATOR_ROLE_ID = 1470388326493323335
+HELPER_ROLE_ID = 1470383693641027616  # trial staff/helper
 
-STAFF_ROLE_ID = 111111111111111111  # replace if used
+STAFF_ROLE_ID = 111111111111111111  # placeholder
 
 APP_STATUS = {
     "caster": True,
@@ -31,79 +29,82 @@ APP_STATUS = {
     "staff": True,
     "team": True,
 }
+# ======================================
 
-# Teams announcement data
+# Colors and helpers
+GREEN = 0x57F287  # Discord success green
+BLURPLE = 0x5865F2  # Discord blurple
+DARK = 0x2F3136
+
+def green_embed(title: str = None, description: str = None):
+    return discord.Embed(title=title, description=description, color=GREEN)
+
+# QUESTION TEXTS USED FOR EMBED TITLES (copied / adapted from your originals; no media section)
+QUESTION_TEXTS = {
+    "staff": {
+        "1": "What's your discord username?",
+        "2": "What's your discord ID? If you don't know how to find your discord id, here's a tutorial:https://youtu.be/KmTQLj6NIfI",
+        "3": "What is your age? Discord TOS states nobody under the age of 13 may be on their platform.",
+        "4": "What previous discord moderation experience do you have? Please state the name of the discord server, your role there and the member count of that server.",
+        "5": "Why should we accept you?",
+    },
+    "caster": {
+        "1": "What's your Discord Username? (EX. Odspace)",
+        "2": "What Casting Mod do you use? (EX. Sakuras)",
+        "3": "How much experience do you have? (EX. 1 month)",
+        "4": "If you have a clip of your casting, please send it here ⬇️ Make sure it's a link.",
+        "5": "Make sure to read the league rules before completing the application.",
+        "6": "What is your age?",
+        "7": "Timezone / availability:",
+        "8": "Any additional notes?",
+        "9": "Upload/download speed (optional):",
+        "10": "Anything else?",
+    },
+    "team": {
+        "1": "What is your team name?",
+        "2": "What is your team abbreviation? (EX. TSO, TTT, SV)",
+        "3": "Team exc:",
+        "4": "Team cap:",
+        "5": "Team players:",
+    },
+    "ref": {
+        "1": "What is your Discord username & ID?",
+        "2": "Name 3 official scrims you have reffed for (include teams and score).",
+        "3": "What is the recommended minimum time a ref should give late players?",
+        "4": "How long do runners have before taggers can pursue them?",
+        "5": "Where do runners go when tagged by the opposing team?",
+        "6": "What headsets are allowed in MMM official scrims?",
+        "7": "Can teams have different colors than their teammates? If not, why?",
+        "8": "Do players have team abbreviation in their name while playing? If not, why?",
+        "9": "Do you understand that if you don't ref at least 3-5 matches per season you may be removed/demoted?",
+        "10": "Do you understand that if you are caught being bias you WILL be removed?",
+        "11": "Do you understand you must follow your Head Referees instructions at all times?",
+    },
+    "commentator": {
+        "1": "What is your Discord Username?",
+        "2": "Do you know in-game callouts and how the league rules work?",
+        "3": "Do you have experience commentating? If so list the discords you have been a commentator for.",
+        "4": "Why should you be commentator? Please give a thorough reasoning on why.",
+        "5": "If you use a PC to call on discord what microphone do you use?",
+    },
+}
+
+# Announcement / team data (example)
 TEAMS_FOR_ANNOUNCEMENT = [
-    "Uncrowned",
-    "Sovereign",
-    "Fusion",
-    "Kitty Power",
-    "Avalanche",
-    "Relic",
-    "LOVE",
-    "We Eat Concrete",
-    "Dark Crimson",
-    "Vivid Dreams",
-    "MEOW",
-    "Lemonade",
-    "KISS",
-    "Runnin Off Shrooms",
-    "Lost Lectures",
-    "Young Crew",
-    "Brothers Til Death",
-    "The Munchers",
-    "Born 2 Kill",
-    "Faithful Monkeys",
-    "After 1",
-    "Otter World",
-    "Viltrum: Empire",
-    "Cloud 9",
+    "Uncrowned", "Sovereign", "Fusion", "Kitty Power", "Avalanche",
+    "Relic", "LOVE", "We Eat Concrete", "Dark Crimson", "Vivid Dreams"
 ]
-
-# OPTIONAL: automatically create teams when teams announcement is sent.
-# Each entry: (team_name, hex_color_without_hash, captain_discord_id_as_int)
 TEAMS_FOR_CREATION = [
-    # ("Uncrowned", "ff0000", 000000000000000000),
-    # ("Sovereign", "00ff00", 000000000000000001),
+    # ("TeamName", "ff00ff", 123456789012345678),
 ]
 
-# Track newly accepted users for the current Everything Wave
+# Track newly accepted for "Everything Wave"
 NEW_REFS = set()
 NEW_CASTERS = set()
 NEW_STAFF = set()
 NEW_COMMENTATORS = set()
 
-
-# Lists of IDs for Everything Wave announcements
-REFEREE_IDS = [
-    1450670825299513507,
-    1456476534918611209,
-    1338455645896310784,
-]
-
-CASTER_IDS = [
-    # PUT YOUR CASTER DISCORD IDs HERE, e.g.:
-    # 111111111111111111,
-    # 222222222222222222,
-]
-
-STAFF_WAVE_IDS = [
-    1125218621791162448,
-    1352754619633242112,
-    1421878014727164068,
-    1101643714033623120,
-    1291873918621192296,
-]
-
-COMMENTATOR_IDS = [
-    818565980263284789,
-    1473838022066835639,
-]
-
-
-
-# ======================================
-
+# Intents & bot
 intents = discord.Intents.default()
 intents.messages = True
 intents.dm_messages = True
@@ -113,7 +114,7 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# In-memory tracking of panel message IDs per guild: {guild_id: [ (channel_id, message_id), ... ]}
+# Keep track of posted panels per guild (channel_id, message_id) list
 PANEL_MESSAGES = {}
 
 # ---------- Register UI ----------
@@ -131,87 +132,67 @@ class RegisterTypeSelect(Select):
             discord.SelectOption(label="Staff", value="staff", description="Apply to be staff"),
             discord.SelectOption(label="Team", value="team", description="Apply as a team"),
         ]
-        super().__init__(
-            placeholder="Choose application type",
-            min_values=1,
-            max_values=1,
-            options=options,
-            custom_id="register_select"
-        )
+        super().__init__(placeholder="Choose application type", min_values=1, max_values=1, options=options, custom_id="register_select")
 
     async def callback(self, interaction: discord.Interaction):
         app_type = self.values[0]
-        # Block team apps for staff role if set
+        # Prevent staff from applying as team
         if app_type == "team" and isinstance(interaction.user, discord.Member):
             if any(r.id == STAFF_ROLE_ID for r in interaction.user.roles):
-                await interaction.response.send_message(
-                    "You already have a staff role and cannot apply for a team.",
-                    ephemeral=True
-                )
+                await interaction.response.send_message("You already have a staff role and cannot apply for a team.", ephemeral=True)
                 return
-        # check open/closed
         if not APP_STATUS.get(app_type, True):
-            await interaction.response.send_message("This App has been closed by an admin", ephemeral=True)
+            await interaction.response.send_message("This application is currently closed.", ephemeral=True)
             return
-        await interaction.response.send_message("Application Started — check your DMs.", ephemeral=True)
+        await interaction.response.send_message("Application started — check your DMs.", ephemeral=True)
         await start_application_flow(interaction.user, app_type, interaction)
 
-# ---------- Application flow with intro Accept/Deny ----------
+# ---------- Application flow ----------
 async def start_application_flow(user: discord.User, app_type: str, interaction: discord.Interaction):
-    # DM intro
     try:
         dm = await user.create_dm()
     except Exception:
         try:
-            await interaction.followup.send(
-                "I couldn't DM you. Please enable DMs from server members and try again.",
-                ephemeral=True
-            )
+            await interaction.followup.send("I couldn't DM you. Enable DMs and try again.", ephemeral=True)
         except:
             pass
         return
 
+    # Intro with Start / Cancel
     class IntroView(View):
         def __init__(self):
             super().__init__(timeout=300)
             self.choice = None
 
-        @discord.ui.button(label="Accept", style=discord.ButtonStyle.success, custom_id="intro_accept")
-        async def accept(self, button_interaction: discord.Interaction, button: Button):
+        @discord.ui.button(label="Start Application", style=discord.ButtonStyle.primary, custom_id="intro_start")
+        async def start_app(self, button_interaction: discord.Interaction, button: Button):
             if button_interaction.user.id != user.id:
                 await button_interaction.response.send_message("This is not for you.", ephemeral=True)
                 return
             self.choice = "accept"
-            await button_interaction.response.edit_message(
-                content="You accepted. Starting application...",
-                view=None
-            )
+            await button_interaction.response.edit_message(content="Beginning application — please answer the prompts in this DM.", view=None)
             self.stop()
 
-        @discord.ui.button(label="Deny", style=discord.ButtonStyle.danger, custom_id="intro_deny")
-        async def deny(self, button_interaction: discord.Interaction, button: Button):
+        @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, custom_id="intro_cancel")
+        async def cancel_app(self, button_interaction: discord.Interaction, button: Button):
             if button_interaction.user.id != user.id:
                 await button_interaction.response.send_message("This is not for you.", ephemeral=True)
                 return
             self.choice = "deny"
-            await button_interaction.response.edit_message(
-                content="You declined the application. If you change your mind, re-run /register.",
-                view=None
-            )
+            await button_interaction.response.edit_message(content="Application cancelled. Re-run /register when ready.", view=None)
             self.stop()
 
     intro_view = IntroView()
+    intro_embed = discord.Embed(
+        title=f"{app_type.capitalize()} Application",
+        description="You will have limited time to answer. Click Start Application to continue or Cancel to stop.",
+        color=BLURPLE
+    )
     try:
-        await dm.send(
-            "Application Started\nPlease answer the questions below, either by selecting menu options or by sending messages to the bot.",
-            view=intro_view
-        )
+        await dm.send(embed=intro_embed, view=intro_view)
     except Exception:
         try:
-            await interaction.followup.send(
-                "I couldn't send the intro DM. Please enable DMs from server members and try again.",
-                ephemeral=True
-            )
+            await interaction.followup.send("Couldn't send the intro DM. Enable DMs and try again.", ephemeral=True)
         except:
             pass
         return
@@ -219,54 +200,45 @@ async def start_application_flow(user: discord.User, app_type: str, interaction:
     await intro_view.wait()
     if intro_view.choice is None:
         try:
-            await dm.send("Timed out. Please re-run apply to start again.")
+            await dm.send("Timed out. Please re-run /register to begin again.")
         except:
             pass
         return
     if intro_view.choice == "deny":
         return
 
-    async def collect_text(question: str):
+    # helpers for collecting answers
+    async def collect_text(question: str, timeout: float = 300.0):
         await dm.send(question)
-
         def check(m: discord.Message):
             return m.author.id == user.id and isinstance(m.channel, discord.DMChannel)
-
         try:
-            msg = await bot.wait_for('message', timeout=300.0, check=check)
+            msg = await bot.wait_for('message', timeout=timeout, check=check)
         except asyncio.TimeoutError:
-            await dm.send("Timed out. Please re-run apply to start again.")
+            await dm.send("Timed out. Please re-run /register to start again.")
             return None
         content = msg.content.strip()
         if not content:
-            await dm.send("Response cannot be empty. Please re-run apply to start again.")
+            await dm.send("Response cannot be empty. Please re-run /register.")
             return None
         return content
 
-    async def ask_yes_no(question: str):
+    async def ask_yes_no(question: str, timeout: float = 300.0):
         class YesNoView(View):
             def __init__(self):
-                super().__init__(timeout=300)
+                super().__init__(timeout=timeout)
                 self.value = None
 
-            @discord.ui.select(
-                placeholder="Select Yes or No",
-                min_values=1,
-                max_values=1,
-                options=[
-                    discord.SelectOption(label="Yes", value="yes"),
-                    discord.SelectOption(label="No", value="no")
-                ]
-            )
-            async def select_callback(self, interaction2: discord.Interaction, select: Select):
+            @discord.ui.select(placeholder="Choose", min_values=1, max_values=1, options=[
+                discord.SelectOption(label="Yes", value="Yes"),
+                discord.SelectOption(label="No", value="No")
+            ])
+            async def sel(self, interaction2: discord.Interaction, select: Select):
                 if interaction2.user.id != user.id:
                     await interaction2.response.send_message("This is not for you.", ephemeral=True)
                     return
                 self.value = select.values[0]
-                await interaction2.response.edit_message(
-                    content=f"{question}\nAnswer: {self.value}",
-                    view=None
-                )
+                await interaction2.response.edit_message(content=f"{question}\nAnswer: {self.value}", view=None)
                 self.stop()
 
         view = YesNoView()
@@ -274,7 +246,33 @@ async def start_application_flow(user: discord.User, app_type: str, interaction:
         await view.wait()
         if view.value is None:
             try:
-                await msg.edit(content="Timed out. Please re-run apply to start again.", view=None)
+                await msg.edit(content="Timed out. Please re-run /register.", view=None)
+            except:
+                pass
+            return None
+        return view.value
+
+    async def ask_select(question: str, options: list, timeout: float = 300.0):
+        class SelectView(View):
+            def __init__(self):
+                super().__init__(timeout=timeout)
+                self.value = None
+
+            @discord.ui.select(placeholder="Select an option", min_values=1, max_values=1, options=[discord.SelectOption(label=o, value=o) for o in options])
+            async def sel(self, interaction2: discord.Interaction, select: Select):
+                if interaction2.user.id != user.id:
+                    await interaction2.response.send_message("This is not for you.", ephemeral=True)
+                    return
+                self.value = select.values[0]
+                await interaction2.response.edit_message(content=f"{question}\nAnswer: {self.value}", view=None)
+                self.stop()
+
+        view = SelectView()
+        msg = await dm.send(question, view=view)
+        await view.wait()
+        if view.value is None:
+            try:
+                await msg.edit(content="Timed out. Please re-run /register.", view=None)
             except:
                 pass
             return None
@@ -282,11 +280,11 @@ async def start_application_flow(user: discord.User, app_type: str, interaction:
 
     answers = {}
 
-    # Questions per app_type
+    # Questions per app_type (matching the "bottom" script wording)
     if app_type == "caster":
         answers["1"] = await collect_text("1/10. What is your Discord username & ID?")
         if answers["1"] is None: return
-        answers["2"] = await ask_yes_no("2/10. Do you have a mic?")
+        answers["2"] = await collect_text("2/10. Do you have a mic?")
         if answers["2"] is None: return
         answers["3"] = await collect_text("3/10. Do you have any past experience with casting in Gorilla Tag? If so please explain.")
         if answers["3"] is None: return
@@ -300,9 +298,7 @@ async def start_application_flow(user: discord.User, app_type: str, interaction:
         if answers["7"] is None: return
         answers["8"] = await collect_text("8/10. Are you familiar with OBS?")
         if answers["8"] is None: return
-        answers["9"] = await collect_text(
-            "9/10. Please send a video showing OBS tasks (make Game Capture, add mic, import/export profile, make scene). Upload via Drive/MediaFire and send link."
-        )
+        answers["9"] = await collect_text("9/10. Please send a video showing OBS tasks (make Game Capture, add mic, import/export profile, make scene). Upload via Drive/MediaFire and send link.")
         if answers["9"] is None: return
         answers["10"] = await collect_text("10/10. Any questions?")
         if answers["10"] is None: return
@@ -320,19 +316,22 @@ async def start_application_flow(user: discord.User, app_type: str, interaction:
         if answers["5"] is None: return
         answers["6"] = await collect_text("6/11. What headsets are allowed in MMM official scrims?")
         if answers["6"] is None: return
-        answers["7"] = await collect_text("7/11. Can teams have different colors than there teammates? If not, why?")
+        answers["7"] = await collect_text("7/11. Can teams have different colors than their teammates? If not, why?")
         if answers["7"] is None: return
         answers["8"] = await collect_text("8/11. Do players have team abbreviation in their name while playing? If not, why?")
         if answers["8"] is None: return
-        answers["9"] = await ask_yes_no("9/11. Do you understand that if you don't ref at least 3-5 matches per season you may be removed/demoted?")
-        if answers["9"] is None: return
-        answers["10"] = await ask_yes_no("10/11. Do you understand that if you are caught being bias you WILL be removed?")
-        if answers["10"] is None: return
-        answers["11"] = await ask_yes_no("11/11. Do you understand you must follow your Head Referees instructions at all times?")
-        if answers["11"] is None: return
+        ans9 = await ask_yes_no("9/11. Do you understand that if you don't ref at least 3-5 matches per season you may be removed/demoted?")
+        if ans9 is None: return
+        answers["9"] = ans9
+        ans10 = await ask_yes_no("10/11. Do you understand that if you are caught being bias you WILL be removed?")
+        if ans10 is None: return
+        answers["10"] = ans10
+        ans11 = await ask_yes_no("11/11. Do you understand you must follow your Head Referees instructions at all times?")
+        if ans11 is None: return
+        answers["11"] = ans11
 
     elif app_type == "commentator":
-        answers["1"] = await collect_text("1/5. What is your Discord username?")
+        answers["1"] = await collect_text("1/5. What is your Discord Username?")
         if answers["1"] is None: return
         answers["2"] = await collect_text("2/5. Do you know in-game callouts and how the league rules work?")
         if answers["2"] is None: return
@@ -365,24 +364,26 @@ async def start_application_flow(user: discord.User, app_type: str, interaction:
         answers["5"] = await collect_text("5/5. Team players:")
         if answers["5"] is None: return
 
+    # Confirmation to user
     await dm.send("Application submitted.\nYour application has been submitted.")
 
-    # Build embed
+    # Build embed (use QUESTION_TEXTS for nicer field names where available)
     embed = discord.Embed(
         title=f"{user.display_name}'s {app_type.capitalize()} Application",
         description="Application Submitted",
-        color=0x2F3136
+        color=DARK
     )
     try:
         embed.set_thumbnail(url=user.display_avatar.url)
     except:
         pass
+
+    qtext_map = QUESTION_TEXTS.get(app_type, {})
     for qnum, ans in answers.items():
-        embed.add_field(
-            name=f"Q{qnum}",
-            value=ans if len(ans) < 1024 else ans[:1021] + "...",
-            inline=False
-        )
+        question_text = qtext_map.get(qnum, f"Question {qnum}")
+        field_name = f"Q{qnum}: {question_text}"
+        embed.add_field(name=field_name, value=ans if len(ans) < 1024 else ans[:1021] + "...", inline=False)
+
     embed.set_footer(text=f"User ID: {user.id}")
 
     # Staff decision view (anonymized public messages)
@@ -399,6 +400,22 @@ async def start_application_flow(user: discord.User, app_type: str, interaction:
             if not isinstance(staff_member, discord.Member) or not staff_member.guild_permissions.administrator:
                 await interaction2.response.send_message("You don't have permission to use this.", ephemeral=True)
                 return
+
+            # Public edit without revealing staff member
+            try:
+                await interaction2.response.edit_message(content="Application accepted.", embed=interaction2.message.embeds[0], view=None)
+            except:
+                try:
+                    await interaction2.message.edit(content="Application accepted.", view=None)
+                except:
+                    pass
+
+            # DM applicant (anonymous)
+            try:
+                applicant = await bot.fetch_user(self.target_user_id)
+                await applicant.send(green_embed("Application Result", "Your application was accepted."))
+            except:
+                pass
 
             # give role if applicable + track for everything wave
             try:
@@ -426,7 +443,6 @@ async def start_application_flow(user: discord.User, app_type: str, interaction:
                             try:
                                 member = await guild.fetch_member(self.target_user_id)
                                 await member.add_roles(role, reason="Application accepted")
-                                # track as newly accepted for this wave
                                 if target_set is not None:
                                     target_set.add(member.id)
                             except discord.NotFound:
@@ -436,22 +452,12 @@ async def start_application_flow(user: discord.User, app_type: str, interaction:
             except:
                 pass
 
-            # TEAM: send /create-team line then delete (from team app; uses Q1/Q2)
+            # TEAM: send /create-team line then delete
             if self.app_type == "team":
                 try:
                     chan = bot.get_channel(TRANSACTIONS_CHANNEL_ID) or await bot.fetch_channel(TRANSACTIONS_CHANNEL_ID)
                     team_name = self.answers.get("1", "Unknown Team")
-                    raw_color = self.answers.get("2", "").strip()
-                    color = raw_color.lstrip("#")
-                    if len(color) != 6 or any(c not in "0123456789abcdefABCDEF" for c in color):
-                        try:
-                            await interaction2.followup.send(
-                                f"Did not send team creation: hex color `{raw_color}` is invalid (must be 6 hex digits).",
-                                ephemeral=True
-                            )
-                        except:
-                            pass
-                        return
+                    color = "ffffff"
                     captain_mention = f"<@{self.target_user_id}>"
                     team_command = f'/create-team "{team_name}" {captain_mention} {color}'
                     msg = await chan.send(team_command)
@@ -471,11 +477,7 @@ async def start_application_flow(user: discord.User, app_type: str, interaction:
 
             # Public edit without revealing staff member
             try:
-                await interaction2.response.edit_message(
-                    content="Application denied.",
-                    embed=interaction2.message.embeds[0],
-                    view=None
-                )
+                await interaction2.response.edit_message(content="Application denied.", embed=interaction2.message.embeds[0], view=None)
             except:
                 try:
                     await interaction2.message.edit(content="Application denied.", view=None)
@@ -485,15 +487,15 @@ async def start_application_flow(user: discord.User, app_type: str, interaction:
             # DM applicant (anonymous)
             try:
                 u = await bot.fetch_user(self.target_user_id)
-                await u.send("Your application was denied.")
+                await u.send(embed=green_embed("Application Result", "Your application was denied."))
             except:
                 pass
 
+    # send to applications channel
     try:
         app_channel = bot.get_channel(APPLICATION_CHANNEL_ID) or await bot.fetch_channel(APPLICATION_CHANNEL_ID)
         view = StaffDecisionView(user.id, app_type, answers)
         await app_channel.send(embed=embed, view=view)
-        await dm.send("Your application has been sent to staff.")
     except Exception:
         await dm.send("Error: application channel not configured or bot lacks permission to post. Contact an admin.")
         return
@@ -507,10 +509,7 @@ class ApplicationsPanelView(View):
         if not APP_STATUS.get(key, True):
             await interaction.response.send_message(f"{user_friendly} applications are currently closed.", ephemeral=True)
             return
-        await interaction.response.send_message(
-            f"Starting {user_friendly} application — check your DMs.",
-            ephemeral=True
-        )
+        await interaction.response.send_message(f"Starting {user_friendly} application — check your DMs.", ephemeral=True)
         await start_application_flow(interaction.user, key, interaction)
 
     @discord.ui.button(custom_id="panel_ref", label="Referee Applications", style=discord.ButtonStyle.primary)
@@ -537,13 +536,13 @@ def build_panel_content():
     content = (
         "# 📝Applications 📝 #\n"
         "Welcome to Comptive Tagging Gorillas. We are currently looking for active refs, casters, commentators, and "
-        "staff members. If you would like to be apart of are team please apply with are provide sources.\n\n"
+        "staff members. If you would like to be apart of our team please apply and provide sources.\n\n"
         "● Ref Application\n"
         "● Commentator Application\n"
         "● Caster Application\n"
         "● Staff Application\n"
         "● Team Applications\n\n"
-        "We really appreciate yall taking your time out of your day to apply and to try to be apart of are team. "
+        "We really appreciate yall taking your time out of your day to apply and to try to be apart of our team. "
         "This means a lot to the CTG boards and staff for helping us through the scrims and server. We hope you "
         "enjoy your time here and thank you for applying.\n\n"
         "Your fellow\n"
