@@ -724,7 +724,7 @@ async def on_ready():
             guild=guild_obj
         )
         @app_commands.describe(
-            teams="Send the teams announcement",
+            teams="Send the teams announcement (and create teams)",
             everything_wave="Send the Everything Wave announcement"
         )
         async def announcements_command(
@@ -733,9 +733,14 @@ async def on_ready():
             everything_wave: bool = False
         ):
             member = interaction.user
-            if not isinstance(member, discord.Member) or not member.guild_permissions.administrator:
+
+            # Allow only admins or STAFF_ROLE_ID to run the command at all
+            is_admin = isinstance(member, discord.Member) and member.guild_permissions.administrator
+            has_staff_role = isinstance(member, discord.Member) and any(r.id == STAFF_ROLE_ID for r in member.roles)
+
+            if not (is_admin or has_staff_role):
                 await interaction.response.send_message(
-                    "You must be an administrator to use this command.",
+                    "You must be staff to use this command.",
                     ephemeral=True
                 )
                 return
@@ -767,8 +772,138 @@ async def on_ready():
                 )
                 return
 
-            # ----- TEAMS ANNOUNCEMENT -----
+            # ----- TEAMS ANNOUNCEMENT + TEAM CREATION -----
             if teams:
+                # Extra safety: only STAFF_ROLE_ID can trigger the teams part
+                if not has_staff_role:
+                    await interaction.response.send_message(
+                        "Only staff can send the teams announcement and create teams.",
+                        ephemeral=True
+                    )
+                    return
+
+                teams_count = len(TEAMS_FOR_ANNOUNCEMENT)
+                teams_list_text = "\n".join(f"• {name}" for name in TEAMS_FOR_ANNOUNCEMENT)
+
+                teams_announcement = (
+                    "@everyone\n"
+                    "🏆 ALL TEAMS HAVE BEEN DECIDED 🏆\n\n"
+                    "After going through every application, we are officially locked in for Season X. "
+                    "Huge congratulations to every team that made it in. We’re excited to see what every roster "
+                    "brings this season. 👀\n\n"
+                    f"HERE ARE YOUR OFFICIAL {teams_count} TEAMS:\n\n"
+                    f"{teams_list_text}\n\n"
+                    "Teams will have a week to get all players before roster lock."
+                )
+
+                await ann_channel.send(teams_announcement)
+
+                # Automatically create teams in the transactions channel (if configured)
+                try:
+                    if TEAMS_FOR_CREATION:
+                        tx_channel = (
+                            bot.get_channel(TRANSACTIONS_CHANNEL_ID)
+                            or await bot.fetch_channel(TRANSACTIONS_CHANNEL_ID)
+                        )
+                        for team_name, color_hex, captain_id in TEAMS_FOR_CREATION:
+                            captain_mention = f"<@{captain_id}>"
+                            color_clean = color_hex.lstrip("#")
+                            if len(color_clean) != 6 or any(
+                                c not in "0123456789abcdefABCDEF" for c in color_clean
+                            ):
+                                continue
+
+                            create_cmd = f'/create-team "{team_name}" {captain_mention} {color_clean}'
+                            tmp = await tx_channel.send(create_cmd)
+                            try:
+                                await tmp.delete()
+                            except:
+                                pass
+                except:
+                    pass
+
+            # ----- EVERYTHING WAVE ANNOUNCEMENT (only newly accepted this wave) -----
+            if everything_wave:
+                helper_mention = f"<@&{HELPER_ROLE_ID}>"
+
+                refs_block = fmt_new(NEW_REFS)
+                casters_block = fmt_new(NEW_CASTERS)
+                staff_block = fmt_new(NEW_STAFF)
+                commentators_block = fmt_new(NEW_COMMENTATORS)
+
+                everything_announcement = (
+                    "@here\n\n"
+                    "# 🌊 Everything Wave!! 🌊\n\n"
+                    "An Everything Wave is gonna happen every few weeks so we can give people the positions they "
+                    "deserve and help out the server.\n\n"
+                    "This includes:\n"
+                    "• Referees\n"
+                    "• Casters\n"
+                    "• Staff\n"
+                    "• Commentators\n\n"
+                    "# Referees\n\n"
+                    f"{refs_block}\n\n"
+                    "# Casters\n\n"
+                    f"{casters_block}\n\n"
+                    "# Staff\n"
+                    f"These people will be {helper_mention} until next staff wave\n"
+                    f"{staff_block}\n\n"
+                    "# Commentators\n\n"
+                    f"{commentators_block}\n\n"
+                    "If you think you can help CTG grow and improve, make sure to apply <#1490026985832054794>\n"
+                )
+
+                await ann_channel.send(everything_announcement)
+
+                # clear for next wave
+                NEW_REFS.clear()
+                NEW_CASTERS.clear()
+                NEW_STAFF.clear()
+                NEW_COMMENTATORS.clear()
+
+            await interaction.response.send_message(
+                "You must be staff to use this command.",
+                ephemeral=True
+            )
+                return
+
+            if not teams and not everything_wave:
+                await interaction.response.send_message(
+                    "You must select at least one of: `teams` or `everything_wave`.",
+                    ephemeral=True
+                )
+                return
+
+            guild = interaction.guild
+            if not guild:
+                await interaction.response.send_message(
+                    "This command can only be used in a server.",
+                    ephemeral=True
+                )
+                return
+
+            # Resolve announcements channel
+            ann_channel = (
+                guild.get_channel(ANNOUNCEMENTS_CHANNEL_ID)
+                or await bot.fetch_channel(ANNOUNCEMENTS_CHANNEL_ID)
+            )
+            if not isinstance(ann_channel, discord.TextChannel):
+                await interaction.response.send_message(
+                    "Announcements channel is not configured correctly. Check ANNOUNCEMENTS_CHANNEL_ID.",
+                    ephemeral=True
+                )
+                return
+
+            # ----- TEAMS ANNOUNCEMENT + TEAM CREATION -----
+            if teams:
+                # Extra safety: only STAFF_ROLE_ID can trigger the teams part
+                if not has_staff_role:
+                    await interaction.response.send_message(
+                        "Only staff can send the teams announcement and create teams.",
+                        ephemeral=True
+                    )
+                    return
+
                 teams_count = len(TEAMS_FOR_ANNOUNCEMENT)
                 teams_list_text = "\n".join(f"• {name}" for name in TEAMS_FOR_ANNOUNCEMENT)
 
