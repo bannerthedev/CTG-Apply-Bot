@@ -769,8 +769,8 @@ async def on_ready():
 
             # ----- TEAMS ANNOUNCEMENT + TEAM CREATION -----
             if teams:
-                # Extra safety: only STAFF_ROLE_ID can trigger the teams part
-                if not has_staff_role:
+                # Extra safety: only STAFF_ROLE_ID OR admins can trigger the teams part
+                if not (has_staff_role or is_admin):
                     await interaction.response.send_message(
                         "Only staff can send the teams announcement and create teams.",
                         ephemeral=True
