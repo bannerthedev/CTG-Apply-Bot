@@ -452,21 +452,16 @@ async def start_application_flow(user: discord.User, app_type: str, interaction:
             except:
                 pass
 
-            # TEAM: send /create-team line then delete
+            # TEAM: just queue team creation; actual /create-team runs on /announcements teams
             if self.app_type == "team":
-                try:
-                    chan = bot.get_channel(TRANSACTIONS_CHANNEL_ID) or await bot.fetch_channel(TRANSACTIONS_CHANNEL_ID)
-                    team_name = self.answers.get("1", "Unknown Team")
-                    color = "ffffff"
-                    captain_mention = f"<@{self.target_user_id}>"
-                    team_command = f'/create-team "{team_name}" {captain_mention} {color}'
-                    msg = await chan.send(team_command)
-                    try:
-                        await msg.delete()
-                    except:
-                        pass
-                except:
-                    pass
+                team_name = self.answers.get("1", "Unknown Team")
+                # default color; you can change this or store from the app if you add that question
+                color = "ffffff"
+                # applicant is the default captain
+                captain_id = self.target_user_id
+
+                # store for later processing by /announcements teams
+                TEAMS_FOR_CREATION.append((team_name, color, captain_id))
 
         @discord.ui.button(label="Deny", style=discord.ButtonStyle.red, custom_id="app_deny")
         async def deny(self, interaction2: discord.Interaction, button: Button):
@@ -821,6 +816,9 @@ async def on_ready():
                                 pass
                 except:
                     pass
+
+                # clear queued teams so they are not created again
+                TEAMS_FOR_CREATION.clear()
 
             # ----- EVERYTHING WAVE ANNOUNCEMENT (only newly accepted this wave) -----
             if everything_wave:
