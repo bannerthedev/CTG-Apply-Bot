@@ -20,7 +20,7 @@ REF_ROLE_ID = 1470388292900880487
 COMMENTATOR_ROLE_ID = 1470388326493323335
 HELPER_ROLE_ID = 1470383693641027616  # trial staff/helper
 
-STAFF_ROLE_ID = 111111111111111111  # placeholder
+STAFF_ROLE_ID = 111111111111111111  # placeholder - set this to your real staff role ID
 
 APP_STATUS = {
     "caster": True,
@@ -39,7 +39,7 @@ DARK = 0x2F3136
 def green_embed(title: str = None, description: str = None):
     return discord.Embed(title=title, description=description, color=GREEN)
 
-# QUESTION TEXTS USED FOR EMBED TITLES (copied / adapted from your originals; no media section)
+# QUESTION TEXTS USED FOR EMBED TITLES
 QUESTION_TEXTS = {
     "staff": {
         "1": "What's your discord username?",
@@ -89,11 +89,13 @@ QUESTION_TEXTS = {
     },
 }
 
-# Announcement / team data (example)
+# Announcement / team data (example template list – not used for real queue now)
 TEAMS_FOR_ANNOUNCEMENT = [
     "Uncrowned", "Sovereign", "Fusion", "Kitty Power", "Avalanche",
     "Relic", "LOVE", "We Eat Concrete", "Dark Crimson", "Vivid Dreams"
 ]
+
+# Will hold REAL accepted teams: list of (team_name, color_hex, captain_id)
 TEAMS_FOR_CREATION = [
     # ("TeamName", "ff00ff", 123456789012345678),
 ]
@@ -280,7 +282,7 @@ async def start_application_flow(user: discord.User, app_type: str, interaction:
 
     answers = {}
 
-    # Questions per app_type (matching the "bottom" script wording)
+    # Questions per app_type
     if app_type == "caster":
         answers["1"] = await collect_text("1/10. What is your Discord username & ID?")
         if answers["1"] is None: return
@@ -367,7 +369,7 @@ async def start_application_flow(user: discord.User, app_type: str, interaction:
     # Confirmation to user
     await dm.send("Application submitted.\nYour application has been submitted.")
 
-    # Build embed (use QUESTION_TEXTS for nicer field names where available)
+    # Build embed
     embed = discord.Embed(
         title=f"{user.display_name}'s {app_type.capitalize()} Application",
         description="Application Submitted",
@@ -386,7 +388,7 @@ async def start_application_flow(user: discord.User, app_type: str, interaction:
 
     embed.set_footer(text=f"User ID: {user.id}")
 
-    # Staff decision view (anonymized public messages)
+    # Staff decision view
     class StaffDecisionView(View):
         def __init__(self, target_user_id: int, app_type: str, answers_dict: dict):
             super().__init__(timeout=None)
@@ -401,7 +403,7 @@ async def start_application_flow(user: discord.User, app_type: str, interaction:
                 await interaction2.response.send_message("You don't have permission to use this.", ephemeral=True)
                 return
 
-            # Public edit without revealing staff member
+            # Public edit
             try:
                 await interaction2.response.edit_message(content="Application accepted.", embed=interaction2.message.embeds[0], view=None)
             except:
@@ -410,10 +412,10 @@ async def start_application_flow(user: discord.User, app_type: str, interaction:
                 except:
                     pass
 
-            # DM applicant (anonymous)
+            # DM applicant
             try:
                 applicant = await bot.fetch_user(self.target_user_id)
-                await applicant.send(green_embed("Application Result", "Your application was accepted."))
+                await applicant.send(embed=green_embed("Application Result", "Your application was accepted."))
             except:
                 pass
 
@@ -452,15 +454,11 @@ async def start_application_flow(user: discord.User, app_type: str, interaction:
             except:
                 pass
 
-            # TEAM: just queue team creation; actual /create-team runs on /announcements teams
+            # TEAM: queue for later creation by /announcements teams
             if self.app_type == "team":
                 team_name = self.answers.get("1", "Unknown Team")
-                # default color; you can change this or store from the app if you add that question
-                color = "ffffff"
-                # applicant is the default captain
+                color = "ffffff"  # default; change if you ask for color
                 captain_id = self.target_user_id
-
-                # store for later processing by /announcements teams
                 TEAMS_FOR_CREATION.append((team_name, color, captain_id))
 
         @discord.ui.button(label="Deny", style=discord.ButtonStyle.red, custom_id="app_deny")
@@ -777,8 +775,18 @@ async def on_ready():
                     )
                     return
 
-                teams_count = len(TEAMS_FOR_ANNOUNCEMENT)
-                teams_list_text = "\n".join(f"• {name}" for name in TEAMS_FOR_ANNOUNCEMENT)
+                # If no accepted teams are queued, don't send template list
+                if not TEAMS_FOR_CREATION:
+                    await interaction.response.send_message(
+                        "There are no accepted teams queued for creation.",
+                        ephemeral=True
+                    )
+                    return
+
+                # Build list from TEAMS_FOR_CREATION (real accepted teams)
+                team_names = [team_name for team_name, _, _ in TEAMS_FOR_CREATION]
+                teams_count = len(team_names)
+                teams_list_text = "\n".join(f"• {name}" for name in team_names)
 
                 teams_announcement = (
                     "@everyone\n"
@@ -793,27 +801,26 @@ async def on_ready():
 
                 await ann_channel.send(teams_announcement)
 
-                # Automatically create teams in the transactions channel (if configured)
+                # Automatically create teams in the transactions channel (from TEAMS_FOR_CREATION)
                 try:
-                    if TEAMS_FOR_CREATION:
-                        tx_channel = (
-                            bot.get_channel(TRANSACTIONS_CHANNEL_ID)
-                            or await bot.fetch_channel(TRANSACTIONS_CHANNEL_ID)
-                        )
-                        for team_name, color_hex, captain_id in TEAMS_FOR_CREATION:
-                            captain_mention = f"<@{captain_id}>"
-                            color_clean = color_hex.lstrip("#")
-                            if len(color_clean) != 6 or any(
-                                c not in "0123456789abcdefABCDEF" for c in color_clean
-                            ):
-                                continue
+                    tx_channel = (
+                        bot.get_channel(TRANSACTIONS_CHANNEL_ID)
+                        or await bot.fetch_channel(TRANSACTIONS_CHANNEL_ID)
+                    )
+                    for team_name, color_hex, captain_id in TEAMS_FOR_CREATION:
+                        captain_mention = f"<@{captain_id}>"
+                        color_clean = color_hex.lstrip("#")
+                        if len(color_clean) != 6 or any(
+                            c not in "0123456789abcdefABCDEF" for c in color_clean
+                        ):
+                            continue
 
-                            create_cmd = f'/create-team "{team_name}" {captain_mention} {color_clean}'
-                            tmp = await tx_channel.send(create_cmd)
-                            try:
-                                await tmp.delete()
-                            except:
-                                pass
+                        create_cmd = f'/create-team "{team_name}" {captain_mention} {color_clean}'
+                        tmp = await tx_channel.send(create_cmd)
+                        try:
+                            await tmp.delete()
+                        except:
+                            pass
                 except:
                     pass
 
