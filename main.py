@@ -791,12 +791,13 @@ async def on_ready():
                 teams_announcement = (
                     "@everyone\n"
                     "🏆 ALL TEAMS HAVE BEEN DECIDED 🏆\n\n"
-                    "After going through every application, we are officially locked in for Season X. "
+                    "After going through every application, we are officially locked in for Season 1. "
                     "Huge congratulations to every team that made it in. We’re excited to see what every roster "
                     "brings this season. 👀\n\n"
                     f"HERE ARE YOUR OFFICIAL {teams_count} TEAMS:\n\n"
                     f"{teams_list_text}\n\n"
                     "Teams will have a week to get all players before roster lock."
+                    "Teams will be created right after this message."
                 )
 
                 await ann_channel.send(teams_announcement)
