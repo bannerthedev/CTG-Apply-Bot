@@ -856,7 +856,7 @@ async def on_ready():
                     f"{staff_block}\n\n"
                     "# Commentators\n\n"
                     f"{commentators_block}\n\n"
-                    "If you think you can help CTG grow and improve, make sure to apply <#1490026985832054794>\n"
+                    "If you think you can help CTG grow and improve, make sure to apply <#1470569579419009205>\n"
                 )
 
                 await ann_channel.send(everything_announcement)
