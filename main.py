@@ -63,7 +63,7 @@ QUESTION_TEXTS = {
     "team": {
         "1": "What is your team name?",
         "2": "What is your team abbreviation? (EX. TSO, TTT, SV)",
-        "3": "Team exc:",
+        "3": "Team executive:",
         "4": "Team cap:",
         "5": "Team players:",
     },
@@ -359,7 +359,7 @@ async def start_application_flow(user: discord.User, app_type: str, interaction:
         if answers["1"] is None: return
         answers["2"] = await collect_text("2/5. What is your team abbreviation? (EX. TSO, TTT, SV)")
         if answers["2"] is None: return
-        answers["3"] = await collect_text("3/5. Team exc:")
+        answers["3"] = await collect_text("3/5. Team executive:")
         if answers["3"] is None: return
         answers["4"] = await collect_text("4/5. Team cap:")
         if answers["4"] is None: return
